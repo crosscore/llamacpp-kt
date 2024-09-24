@@ -72,6 +72,11 @@ class MainActivity(
 
         val models = listOf(
             Downloadable(
+                "Qwen2.5 1.5B (Q8_0, 1.65 GiB)",
+                Uri.parse("https://huggingface.co/QuantFactory/Qwen2.5-1.5B-GGUF/blob/main/Qwen2.5-1.5B.Q8_0.gguf?download=true"),
+                File(extFilesDir, "qwen-2.5-1.5B-q8_0.gguf"),
+            ),
+            Downloadable(
                 "Phi-2 7B (Q4_0, 1.6 GiB)",
                 Uri.parse("https://huggingface.co/ggml-org/models/resolve/main/phi-2/ggml-model-q4_0.gguf?download=true"),
                 File(extFilesDir, "phi-2-q4_0.gguf"),
