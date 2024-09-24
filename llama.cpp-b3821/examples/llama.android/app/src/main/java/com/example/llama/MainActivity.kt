@@ -1,3 +1,5 @@
+// llama.cpp-b3821/examples/llama.android/app/src/main/java/com/example/llama/MainActivity.kt
+
 package com.example.llama
 
 import android.app.ActivityManager
@@ -28,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import com.example.llama.ui.theme.LlamaAndroidTheme
@@ -110,7 +113,24 @@ fun MainCompose(
     dm: DownloadManager,
     models: List<Downloadable>
 ) {
+    val context = LocalContext.current
+
     Column {
+        if (viewModel.showMemoryInfo) {
+            val activityManager = context.getSystemService<ActivityManager>()
+            val memoryInfo = ActivityManager.MemoryInfo()
+            activityManager?.getMemoryInfo(memoryInfo)
+            val free = Formatter.formatFileSize(context, memoryInfo.availMem)
+            val total = Formatter.formatFileSize(context, memoryInfo.totalMem)
+            Text("Memory: $free / $total", modifier = Modifier.padding(16.dp))
+        }
+
+        if (viewModel.showModelPath) {
+            viewModel.currentModelPath?.let {
+                Text("Model Path: $it", modifier = Modifier.padding(16.dp))
+            }
+        }
+
         val scrollState = rememberLazyListState()
 
         Box(modifier = Modifier.weight(1f)) {
@@ -138,6 +158,8 @@ fun MainCompose(
                     clipboard.setPrimaryClip(ClipData.newPlainText("", it))
                 }
             }) { Text("Copy") }
+            Button({ viewModel.toggleMemoryInfo() }) { Text("Memory") }
+            Button({ viewModel.toggleModelPath() }) { Text("Model Path") }
         }
 
         Column {

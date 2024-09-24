@@ -1,3 +1,5 @@
+// llama.cpp-b3821/examples/llama.android/app/src/main/java/com/example/llama/MainViewModel.kt
+
 package com.example.llama
 
 import android.llama.cpp.LLamaAndroid
@@ -22,6 +24,15 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
         private set
 
     var message by mutableStateOf("")
+        private set
+
+    var showMemoryInfo by mutableStateOf(false)
+        private set
+
+    var showModelPath by mutableStateOf(false)
+        private set
+
+    var currentModelPath: String? = null
         private set
 
     override fun onCleared() {
@@ -83,6 +94,7 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
         viewModelScope.launch {
             try {
                 llamaAndroid.load(pathToModel)
+                currentModelPath = pathToModel
                 messages += "Loaded $pathToModel"
             } catch (exc: IllegalStateException) {
                 Log.e(tag, "load() failed", exc)
@@ -101,5 +113,13 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
 
     fun log(message: String) {
         messages += message
+    }
+
+    fun toggleMemoryInfo() {
+        showMemoryInfo = !showMemoryInfo
+    }
+
+    fun toggleModelPath() {
+        showModelPath = !showModelPath
     }
 }
