@@ -1,6 +1,15 @@
 # llamacpp-kt
 
-```CMakeLists.txt
+## git clone
+```
+git clone git@github.com:ggerganov/llama.cpp.git
+cd llama.cpp
+git checkout b3821
+mv ../llama.cpp ../llama.cpp-b3821
+```
+
+## CMakeLists.txt setting
+```/Users/yuu/repos/llamacpp-kt/llama.cpp-b3821/examples/llama.android/llama/src/main/cpp/CMakeLists.txt
 cmake_minimum_required(VERSION 3.22.1)
 
 project("llama-android")
