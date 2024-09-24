@@ -38,7 +38,6 @@ class MainActivity(
     downloadManager: DownloadManager? = null,
     clipboardManager: ClipboardManager? = null,
 ): ComponentActivity() {
-    //private val tag: String? = this::class.simpleName
 
     private val activityManager by lazy { activityManager ?: getSystemService<ActivityManager>()!! }
     private val downloadManager by lazy { downloadManager ?: getSystemService<DownloadManager>()!! }
@@ -46,7 +45,6 @@ class MainActivity(
 
     private val viewModel: MainViewModel by viewModels()
 
-    // Get a MemoryInfo object for the device's current memory status.
     private fun availableMemory(): ActivityManager.MemoryInfo {
         return ActivityManager.MemoryInfo().also { memoryInfo ->
             activityManager.getMemoryInfo(memoryInfo)
