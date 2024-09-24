@@ -14,11 +14,7 @@ import android.text.format.Formatter
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -115,19 +111,21 @@ fun MainCompose(
 ) {
     val context = LocalContext.current
 
-    Column {
+    Column(modifier = Modifier.padding(16.dp)) {
+        // メモリ情報の表示
         if (viewModel.showMemoryInfo) {
             val activityManager = context.getSystemService<ActivityManager>()
             val memoryInfo = ActivityManager.MemoryInfo()
             activityManager?.getMemoryInfo(memoryInfo)
             val free = Formatter.formatFileSize(context, memoryInfo.availMem)
             val total = Formatter.formatFileSize(context, memoryInfo.totalMem)
-            Text("Memory: $free / $total", modifier = Modifier.padding(16.dp))
+            Text("Memory: $free / $total", modifier = Modifier.padding(bottom = 8.dp))
         }
 
+        // モデルパスの表示
         if (viewModel.showModelPath) {
             viewModel.currentModelPath?.let {
-                Text("Model Path: $it", modifier = Modifier.padding(16.dp))
+                Text("Model Path: $it", modifier = Modifier.padding(bottom = 8.dp))
             }
         }
 
@@ -139,7 +137,7 @@ fun MainCompose(
                     Text(
                         it,
                         style = MaterialTheme.typography.bodyLarge.copy(color = LocalContentColor.current),
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
             }
@@ -148,21 +146,59 @@ fun MainCompose(
             value = viewModel.message,
             onValueChange = { viewModel.updateMessage(it) },
             label = { Text("Message") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
         )
-        Row {
-            Button({ viewModel.send() }) { Text("Send") }
-            Button({ viewModel.bench(8, 4, 1) }) { Text("Bench") }
-            Button({ viewModel.clear() }) { Text("Clear") }
-            Button({
-                viewModel.messages.joinToString("\n").let {
-                    clipboard.setPrimaryClip(ClipData.newPlainText("", it))
-                }
-            }) { Text("Copy") }
-            Button({ viewModel.toggleMemoryInfo() }) { Text("Memory") }
-            Button({ viewModel.toggleModelPath() }) { Text("Model Path") }
+
+        // 1つ目のボタン行: Send, Bench, Clear, Copy
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { viewModel.send() },
+                modifier = Modifier.weight(1f)
+            ) { Text("Send") }
+            Button(
+                onClick = { viewModel.bench(8, 4, 1) },
+                modifier = Modifier.weight(1f)
+            ) { Text("Bench") }
+            Button(
+                onClick = { viewModel.clear() },
+                modifier = Modifier.weight(1f)
+            ) { Text("Clear") }
+            Button(
+                onClick = {
+                    viewModel.messages.joinToString("\n").let {
+                        clipboard.setPrimaryClip(ClipData.newPlainText("", it))
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) { Text("Copy") }
         }
 
-        Column {
+        // 2つ目のボタン行: Memory, Model Path
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { viewModel.toggleMemoryInfo() },
+                modifier = Modifier.weight(1f)
+            ) { Text("Memory") }
+            Button(
+                onClick = { viewModel.toggleModelPath() },
+                modifier = Modifier.weight(1f)
+            ) { Text("Model Path") }
+        }
+
+        // モデルのダウンロードボタン
+        Column(modifier = Modifier.padding(top = 8.dp)) {
             for (model in models) {
                 Downloadable.DownloadButton(viewModel, dm, model)
             }
