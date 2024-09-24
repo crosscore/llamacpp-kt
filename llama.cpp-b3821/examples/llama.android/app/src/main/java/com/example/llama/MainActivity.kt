@@ -73,23 +73,15 @@ class MainActivity(
         val models = listOf(
             Downloadable(
                 "Qwen2.5 1.5B (Q8_0, 1.65 GiB)",
-                Uri.parse("https://huggingface.co/QuantFactory/Qwen2.5-1.5B-GGUF/blob/main/Qwen2.5-1.5B.Q8_0.gguf?download=true"),
+                Uri.parse("https://huggingface.co/QuantFactory/Qwen2.5-1.5B-GGUF/resolve/main/Qwen2.5-1.5B.Q8_0.gguf?download=true"),
                 File(extFilesDir, "qwen-2.5-1.5B-q8_0.gguf"),
+                sha256 = "a7d1fe4d251eb42b531d169551ebd0befc83c85f304f13825cba5e65e7dba330"
             ),
             Downloadable(
-                "Phi-2 7B (Q4_0, 1.6 GiB)",
-                Uri.parse("https://huggingface.co/ggml-org/models/resolve/main/phi-2/ggml-model-q4_0.gguf?download=true"),
-                File(extFilesDir, "phi-2-q4_0.gguf"),
-            ),
-            Downloadable(
-                "TinyLlama 1.1B (f16, 2.2 GiB)",
-                Uri.parse("https://huggingface.co/ggml-org/models/resolve/main/tinyllama-1.1b/ggml-model-f16.gguf?download=true"),
-                File(extFilesDir, "tinyllama-1.1-f16.gguf"),
-            ),
-            Downloadable(
-                "Phi 2 DPO (Q3_K_M, 1.48 GiB)",
-                Uri.parse("https://huggingface.co/TheBloke/phi-2-dpo-GGUF/resolve/main/phi-2-dpo.Q3_K_M.gguf?download=true"),
-                File(extFilesDir, "phi-2-dpo.Q3_K_M.gguf")
+                "Qwen2.5 1.5B (Q2_K, 0.67 GiB)",
+                Uri.parse("https://huggingface.co/QuantFactory/Qwen2.5-1.5B-GGUF/resolve/main/Qwen2.5-1.5B.Q2_K.gguf?download=true"),
+                File(extFilesDir, "qwen-2.5-1.5B-Q2_K.gguf"),
+                sha256 = "081813878c024756d5069a9477108fde65e47d151717ff5e6dc608abd1645f03"
             ),
         )
 
@@ -152,7 +144,7 @@ fun MainCompose(
 
         Column {
             for (model in models) {
-                Downloadable.Button(viewModel, dm, model)
+                Downloadable.DownloadButton(viewModel, dm, model)
             }
         }
     }
