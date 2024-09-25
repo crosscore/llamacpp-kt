@@ -2,29 +2,11 @@
 #include <android/log.h>
 #include <jni.h>
 #include <iomanip>
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <unistd.h>
 #include "llama.h"
 #include "common.h"
-
-// Write C++ code here.
-//
-// Do not forget to dynamically load the C++ library into your application.
-//
-// For instance,
-//
-// In MainActivity.java:
-//    static {
-//       System.loadLibrary("llama-android");
-//    }
-//
-// Or, in MainActivity.kt:
-//    companion object {
-//      init {
-//         System.loadLibrary("llama-android")
-//      }
-//    }
 
 #define TAG "llama-android.cpp"
 #define LOGi(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
@@ -41,7 +23,7 @@ bool is_valid_utf8(const char * string) {
         return true;
     }
 
-    const unsigned char * bytes = (const unsigned char *)string;
+    const auto * bytes = (const unsigned char *)string;
     int num;
 
     while (*bytes != 0x00) {
@@ -331,8 +313,9 @@ Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv *, jobject, jlong sampl
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject) {
-    llama_backend_init();
+Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject, jboolean numa) {
+    bool c_numa = (numa != JNI_FALSE);
+    llama_backend_init(c_numa);
 }
 
 extern "C"

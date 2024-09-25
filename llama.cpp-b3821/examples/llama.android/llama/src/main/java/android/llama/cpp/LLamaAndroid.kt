@@ -133,11 +133,6 @@ class LLamaAndroid {
         }
     }.flowOn(runLoop)
 
-    /**
-     * Unloads the model and frees resources.
-     *
-     * This is a no-op if there's no model loaded.
-     */
     suspend fun unload() {
         withContext(runLoop) {
             when (val state = threadLocalState.get()) {
@@ -145,7 +140,7 @@ class LLamaAndroid {
                     free_context(state.context)
                     free_model(state.model)
                     free_batch(state.batch)
-                    free_sampler(state.sampler);
+                    free_sampler(state.sampler)
 
                     threadLocalState.set(State.Idle)
                 }
