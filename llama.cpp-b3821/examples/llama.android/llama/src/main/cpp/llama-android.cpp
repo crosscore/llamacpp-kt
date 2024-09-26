@@ -313,9 +313,8 @@ Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv *, jobject, jlong sampl
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject, jboolean numa) {
-    bool c_numa = (numa != JNI_FALSE);
-    llama_backend_init(c_numa);
+Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject) {
+    llama_backend_init();
 }
 
 extern "C"
@@ -346,7 +345,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
     auto n_ctx = llama_n_ctx(context);
     auto n_kv_req = tokens_list.size() + (n_len - tokens_list.size());
 
-    LOGi("n_len = %d, n_ctx = %d, n_kv_req = %d", n_len, n_ctx, n_kv_req);
+    LOGi("n_len = %d, n_ctx = %d, n_kv_req = %zu", n_len, n_ctx, n_kv_req);
 
     if (n_kv_req > n_ctx) {
         LOGe("error: n_kv_req > n_ctx, the required KV cache size is not big enough");
