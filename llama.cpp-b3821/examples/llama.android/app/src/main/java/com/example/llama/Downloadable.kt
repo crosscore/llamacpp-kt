@@ -1,4 +1,5 @@
 // llama.cpp-b3821/examples/llama.android/app/src/main/java/com/example/llama/Downloadable.kt
+
 package com.example.llama
 
 import android.app.DownloadManager
@@ -32,7 +33,12 @@ data class Downloadable(
         data class Error(val message: String) : State
 
         @Composable
-        fun DownloadButton(viewModel: MainViewModel, dm: DownloadManager, item: Downloadable) {
+        fun DownloadButton(
+            viewModel: MainViewModel,
+            dm: DownloadManager,
+            item: Downloadable,
+            isLoading: Boolean
+        ) {
             var status by remember {
                 mutableStateOf(
                     if (item.destination.exists() && verifyFileSha256(item.destination, item.sha256)) {
@@ -138,7 +144,10 @@ data class Downloadable(
                 }
             }
 
-            Button(onClick = { onClick() }, enabled = status !is Downloading) {
+            Button(
+                onClick = { onClick() },
+                enabled = status !is Downloading && !isLoading // 変更点：isLoadingを考慮してボタンを無効化
+            ) {
                 when (val currentStatus = status) {
                     is Downloading -> {
                         Text("Downloading ${currentStatus.progress}%")

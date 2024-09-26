@@ -18,12 +18,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,7 +31,7 @@ class MainActivity(
     activityManager: ActivityManager? = null,
     downloadManager: DownloadManager? = null,
     clipboardManager: ClipboardManager? = null,
-): ComponentActivity() {
+) : ComponentActivity() {
 
     private val activityManager by lazy { activityManager ?: getSystemService<ActivityManager>()!! }
     private val downloadManager by lazy { downloadManager ?: getSystemService<DownloadManager>()!! }
@@ -132,13 +127,12 @@ fun MainCompose(
         val scrollState = rememberLazyListState()
 
         Box(modifier = Modifier.weight(1f)) {
-            LazyColumn(state = scrollState) {
-                items(viewModel.messages) {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodyLarge.copy(color = LocalContentColor.current),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
+            LazyColumn(
+                state = scrollState,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(viewModel.messages) { chatMessage ->
+                    ChatMessageView(chatMessage)
                 }
             }
         }
@@ -148,7 +142,8 @@ fun MainCompose(
             label = { Text("Message") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = 8.dp),
+            enabled = !viewModel.isLoading // 入力を無効化
         )
 
         // 1つ目のボタン行: Send, Bench, Clear, Copy
@@ -160,19 +155,27 @@ fun MainCompose(
         ) {
             Button(
                 onClick = { viewModel.send() },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = !viewModel.isLoading // ロード中は無効化
             ) { Text("Send") }
             Button(
                 onClick = { viewModel.bench(8, 4, 1) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = !viewModel.isLoading // ロード中は無効化
             ) { Text("Bench") }
             Button(
                 onClick = { viewModel.clear() },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = !viewModel.isLoading // ロード中は無効化
             ) { Text("Clear") }
             Button(
                 onClick = {
-                    viewModel.messages.joinToString("\n").let {
+                    viewModel.messages.joinToString("\n") { message ->
+                        when (message.sender) {
+                            Sender.User -> "User: ${message.content}"
+                            Sender.LLM -> "LLM: ${message.content}"
+                        }
+                    }.let {
                         clipboard.setPrimaryClip(ClipData.newPlainText("", it))
                     }
                 },
@@ -200,8 +203,44 @@ fun MainCompose(
         // モデルのダウンロードボタン
         Column(modifier = Modifier.padding(top = 8.dp)) {
             for (model in models) {
-                Downloadable.DownloadButton(viewModel, dm, model)
+                Downloadable.DownloadButton(viewModel, dm, model, viewModel.isLoading)
             }
         }
+
+        // ロード中にプログレスインジケーターを表示
+        if (viewModel.isLoading) {
+            LinearProgressIndicator(modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp))
+        }
+    }
+}
+
+@Composable
+fun ChatMessageView(chatMessage: ChatMessage) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = when (chatMessage.sender) {
+                Sender.User -> "User: "
+                Sender.LLM -> "LLM: "
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = when (chatMessage.sender) {
+                Sender.User -> MaterialTheme.colorScheme.primary
+                Sender.LLM -> MaterialTheme.colorScheme.secondary
+            },
+            modifier = Modifier.width(60.dp) // ラベルの幅を固定
+        )
+        Text(
+            text = chatMessage.content,
+            style = MaterialTheme.typography.bodyLarge,
+            color = LocalContentColor.current,
+            modifier = Modifier
+                .weight(1f)
+        )
     }
 }

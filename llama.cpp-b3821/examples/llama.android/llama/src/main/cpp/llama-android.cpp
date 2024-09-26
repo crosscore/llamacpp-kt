@@ -291,7 +291,9 @@ Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *, jobject, jint n_tokens,
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv *, jobject, jlong batch_pointer) {
-    llama_batch_free(*reinterpret_cast<llama_batch *>(batch_pointer));
+    llama_batch * batch = reinterpret_cast<llama_batch *>(batch_pointer);
+    llama_batch_free(*batch);
+    // delete batch; // batch構造体自体を解放
 }
 
 extern "C"
@@ -308,13 +310,15 @@ Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv *, jobject) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv *, jobject, jlong sampler_pointer) {
-    llama_sampler_free(reinterpret_cast<llama_sampler *>(sampler_pointer));
+    llama_sampler * sampler = reinterpret_cast<llama_sampler *>(sampler_pointer);
+    llama_sampler_free(sampler);
+    // delete sampler; // sampler構造体自体を解放
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject) {
-    llama_backend_init();
+Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject, jboolean numa) {
+    llama_backend_init(numa);
 }
 
 extern "C"

@@ -9,10 +9,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
-class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instance()): ViewModel() {
+class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instance()) : ViewModel() {
     companion object {
         @JvmStatic
         private val NanosPerSecond = 1_000_000_000.0
@@ -20,7 +22,7 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
 
     private val tag: String? = this::class.simpleName
 
-    var messages by mutableStateOf(listOf("Initializing..."))
+    var messages by mutableStateOf(listOf(ChatMessage(Sender.LLM, "Initializing...")))
         private set
 
     var message by mutableStateOf("")
@@ -35,6 +37,11 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
     var currentModelPath: String? = null
         private set
 
+    var isLoading by mutableStateOf(false)
+        private set
+
+    private var sendJob: Job? = null
+
     override fun onCleared() {
         super.onCleared()
 
@@ -42,27 +49,53 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
             try {
                 llamaAndroid.unload()
             } catch (exc: IllegalStateException) {
-                messages += exc.message!!
+                messages += ChatMessage(Sender.LLM, exc.message!!)
             }
         }
     }
 
     fun send() {
-        val text = message
+        val text = message.trim()
+        if (text.isEmpty()) return // 空メッセージは無視
         message = ""
 
-        // Add to messages console.
-        messages += text
-        messages += ""
+        // ユーザーのメッセージを追加
+        messages = messages + ChatMessage(Sender.User, text)
 
-        viewModelScope.launch {
-            llamaAndroid.send(text)
-                .catch {
-                    Log.e(tag, "send() failed", it)
-                    messages += it.message!!
-                }
-                .collect { messages = messages.dropLast(1) + (messages.last() + it) }
+        sendJob = viewModelScope.launch {
+            val responseBuilder = StringBuilder()
+            try {
+                // まず空のLLMメッセージを追加
+                val initialMessage = ChatMessage(Sender.LLM, "")
+                messages = messages + initialMessage
+                val llmMessageIndex = messages.size - 1
+
+                llamaAndroid.send(text)
+                    .catch { e ->
+                        Log.e(tag, "send() failed", e)
+                        messages = messages.toMutableList().apply {
+                            set(llmMessageIndex, ChatMessage(Sender.LLM, e.message ?: "Unknown error"))
+                        }
+                    }
+                    .collect { token ->
+                        responseBuilder.append(token)
+                        // リアルタイムでメッセージを更新
+                        messages = messages.toMutableList().apply {
+                            set(llmMessageIndex, ChatMessage(Sender.LLM, responseBuilder.toString()))
+                        }
+                    }
+            } catch (e: CancellationException) {
+                Log.i(tag, "send() canceled")
+                messages = messages + ChatMessage(Sender.LLM, "Operation canceled.")
+            } catch (e: Exception) {
+                Log.e(tag, "send() failed", e)
+                messages = messages + ChatMessage(Sender.LLM, "Error: ${e.message ?: "Unknown error"}")
+            }
         }
+    }
+
+    private fun cancelSend() {
+        sendJob?.cancel()
     }
 
     fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1) {
@@ -72,33 +105,44 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
                 val warmupResult = llamaAndroid.bench(pp, tg, pl, nr)
                 val end = System.nanoTime()
 
-                messages += warmupResult
+                messages += ChatMessage(Sender.LLM, warmupResult)
 
                 val warmup = (end - start).toDouble() / NanosPerSecond
-                messages += "Warm up time: $warmup seconds, please wait..."
+                messages += ChatMessage(Sender.LLM, "Warm up time: $warmup seconds, please wait...")
 
                 if (warmup > 5.0) {
-                    messages += "Warm up took too long, aborting benchmark"
+                    messages += ChatMessage(Sender.LLM, "Warm up took too long, aborting benchmark")
                     return@launch
                 }
 
-                messages += llamaAndroid.bench(512, 128, 1, 3)
+                messages += ChatMessage(Sender.LLM, llamaAndroid.bench(512, 128, 1, 3))
             } catch (exc: IllegalStateException) {
                 Log.e(tag, "bench() failed", exc)
-                messages += exc.message!!
+                messages += ChatMessage(Sender.LLM, exc.message!!)
             }
         }
     }
 
     fun load(pathToModel: String) {
+        if (isLoading) {
+            messages += ChatMessage(Sender.LLM, "Model is already loading. Please wait.")
+            return
+        }
+
+        isLoading = true
         viewModelScope.launch {
             try {
+                // 送信中の操作をキャンセル
+                cancelSend()
+
                 llamaAndroid.load(pathToModel)
                 currentModelPath = pathToModel
-                messages += "Loaded $pathToModel"
+                messages += ChatMessage(Sender.LLM, "Loaded $pathToModel")
             } catch (exc: IllegalStateException) {
                 Log.e(tag, "load() failed", exc)
-                messages += exc.message!!
+                messages += ChatMessage(Sender.LLM, exc.message!!)
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -112,7 +156,7 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
     }
 
     fun log(message: String) {
-        messages += message
+        messages += ChatMessage(Sender.LLM, message)
     }
 
     fun toggleMemoryInfo() {
