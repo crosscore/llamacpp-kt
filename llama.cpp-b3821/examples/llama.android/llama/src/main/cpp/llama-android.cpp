@@ -141,20 +141,17 @@ Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv *, jobject) {
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *, jobject, jint n_tokens, jint embd, jint n_seq_max) {
-
-    // Source: Copy of llama.cpp:llama_batch_init but heap-allocated.
-
     llama_batch *batch = new llama_batch {
-        0,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        0,
-        0,
-        0,
+            n_tokens, // 修正: n_tokens を設定
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            0,
+            0,
+            0,
     };
 
     if (embd) {
@@ -178,8 +175,32 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv *, jobject, jlong batch_pointer) {
     llama_batch * batch = reinterpret_cast<llama_batch *>(batch_pointer);
-    llama_batch_free(*batch);
-    // delete batch; // batch構造体自体を解放
+    if (batch) {
+        if (batch->embd) {
+            free(batch->embd);
+        }
+        if (batch->token) {
+            free(batch->token);
+        }
+        if (batch->pos) {
+            free(batch->pos);
+        }
+        if (batch->n_seq_id) {
+            free(batch->n_seq_id);
+        }
+        if (batch->seq_id) {
+            for (int i = 0; i < batch->n_tokens; ++i) {
+                if (batch->seq_id[i]) {
+                    free(batch->seq_id[i]);
+                }
+            }
+            free(batch->seq_id);
+        }
+        if (batch->logits) {
+            free(batch->logits);
+        }
+        delete batch; // 修正: batch 構造体自体を解放
+    }
 }
 
 extern "C"
