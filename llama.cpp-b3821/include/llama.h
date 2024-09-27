@@ -395,7 +395,7 @@ extern "C" {
     // Initialize the llama + ggml backend
     // If numa is true, use NUMA optimizations
     // Call once at the start of the program
-    LLAMA_API void llama_backend_init(bool numa);
+    LLAMA_API void llama_backend_init();
 
     //optional:
     LLAMA_API void llama_numa_init(enum ggml_numa_strategy numa);

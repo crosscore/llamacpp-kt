@@ -139,120 +139,6 @@ Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv *, jobject) {
 }
 
 extern "C"
-JNIEXPORT jstring JNICALL
-Java_android_llama_cpp_LLamaAndroid_bench_1model(
-        JNIEnv *env,
-        jobject,
-        jlong context_pointer,
-        jlong model_pointer,
-        jlong batch_pointer,
-        jint pp,
-        jint tg,
-        jint pl,
-        jint nr
-        ) {
-    auto pp_avg = 0.0;
-    auto tg_avg = 0.0;
-    auto pp_std = 0.0;
-    auto tg_std = 0.0;
-
-    const auto context = reinterpret_cast<llama_context *>(context_pointer);
-    const auto model = reinterpret_cast<llama_model *>(model_pointer);
-    const auto batch = reinterpret_cast<llama_batch *>(batch_pointer);
-
-    const int n_ctx = llama_n_ctx(context);
-
-    LOGi("n_ctx = %d", n_ctx);
-
-    int i, j;
-    int nri;
-    for (nri = 0; nri < nr; nri++) {
-        LOGi("Benchmark prompt processing (pp)");
-
-        llama_batch_clear(*batch);
-
-        const int n_tokens = pp;
-        for (i = 0; i < n_tokens; i++) {
-            llama_batch_add(*batch, 0, i, { 0 }, false);
-        }
-
-        batch->logits[batch->n_tokens - 1] = true;
-        llama_kv_cache_clear(context);
-
-        const auto t_pp_start = ggml_time_us();
-        if (llama_decode(context, *batch) != 0) {
-            LOGi("llama_decode() failed during prompt processing");
-        }
-        const auto t_pp_end = ggml_time_us();
-
-        // bench text generation
-
-        LOGi("Benchmark text generation (tg)");
-
-        llama_kv_cache_clear(context);
-        const auto t_tg_start = ggml_time_us();
-        for (i = 0; i < tg; i++) {
-
-            llama_batch_clear(*batch);
-            for (j = 0; j < pl; j++) {
-                llama_batch_add(*batch, 0, i, { j }, true);
-            }
-
-            LOGi("llama_decode() text generation: %d", i);
-            if (llama_decode(context, *batch) != 0) {
-                LOGi("llama_decode() failed during text generation");
-            }
-        }
-
-        const auto t_tg_end = ggml_time_us();
-
-        llama_kv_cache_clear(context);
-
-        const auto t_pp = double(t_pp_end - t_pp_start) / 1000000.0;
-        const auto t_tg = double(t_tg_end - t_tg_start) / 1000000.0;
-
-        const auto speed_pp = double(pp) / t_pp;
-        const auto speed_tg = double(pl * tg) / t_tg;
-
-        pp_avg += speed_pp;
-        tg_avg += speed_tg;
-
-        pp_std += speed_pp * speed_pp;
-        tg_std += speed_tg * speed_tg;
-
-        LOGi("pp %f t/s, tg %f t/s", speed_pp, speed_tg);
-    }
-
-    pp_avg /= double(nr);
-    tg_avg /= double(nr);
-
-    if (nr > 1) {
-        pp_std = sqrt(pp_std / double(nr - 1) - pp_avg * pp_avg * double(nr) / double(nr - 1));
-        tg_std = sqrt(tg_std / double(nr - 1) - tg_avg * tg_avg * double(nr) / double(nr - 1));
-    } else {
-        pp_std = 0;
-        tg_std = 0;
-    }
-
-    char model_desc[128];
-    llama_model_desc(model, model_desc, sizeof(model_desc));
-
-    const auto model_size     = double(llama_model_size(model)) / 1024.0 / 1024.0 / 1024.0;
-    const auto model_n_params = double(llama_model_n_params(model)) / 1e9;
-
-    const auto backend    = "(Android)"; // TODO: What should this be?
-
-    std::stringstream result;
-    result << std::setprecision(2);
-    result << "| model | size | params | backend | test | t/s |\n";
-    result << "| --- | --- | --- | --- | --- | --- |\n";
-    result << "| " << model_desc << " | " << model_size << "GiB | " << model_n_params << "B | " << backend << " | pp " << pp << " | " << pp_avg << " ± " << pp_std << " |\n";
-    result << "| " << model_desc << " | " << model_size << "GiB | " << model_n_params << "B | " << backend << " | tg " << tg << " | " << tg_avg << " ± " << tg_std << " |\n";
-
-    return env->NewStringUTF(result.str().c_str());
-}
-
-extern "C"
 JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *, jobject, jint n_tokens, jint embd, jint n_seq_max) {
 
@@ -317,8 +203,8 @@ Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv *, jobject, jlong sampl
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject, jboolean numa) {
-    llama_backend_init(numa);
+Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject) {
+    llama_backend_init();
 }
 
 extern "C"

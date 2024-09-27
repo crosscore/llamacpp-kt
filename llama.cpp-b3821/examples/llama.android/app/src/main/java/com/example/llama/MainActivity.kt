@@ -159,11 +159,6 @@ fun MainCompose(
                 enabled = !viewModel.isLoading // ロード中は無効化
             ) { Text("Send") }
             Button(
-                onClick = { viewModel.bench(8, 4, 1) },
-                modifier = Modifier.weight(1f),
-                enabled = !viewModel.isLoading // ロード中は無効化
-            ) { Text("Bench") }
-            Button(
                 onClick = { viewModel.clear() },
                 modifier = Modifier.weight(1f),
                 enabled = !viewModel.isLoading // ロード中は無効化

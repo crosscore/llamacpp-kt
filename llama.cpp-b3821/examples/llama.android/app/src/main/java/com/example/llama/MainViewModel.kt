@@ -98,31 +98,6 @@ class MainViewModel(private val llamaAndroid: LLamaAndroid = LLamaAndroid.instan
         sendJob?.cancel()
     }
 
-    fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1) {
-        viewModelScope.launch {
-            try {
-                val start = System.nanoTime()
-                val warmupResult = llamaAndroid.bench(pp, tg, pl, nr)
-                val end = System.nanoTime()
-
-                messages += ChatMessage(Sender.LLM, warmupResult)
-
-                val warmup = (end - start).toDouble() / NanosPerSecond
-                messages += ChatMessage(Sender.LLM, "Warm up time: $warmup seconds, please wait...")
-
-                if (warmup > 5.0) {
-                    messages += ChatMessage(Sender.LLM, "Warm up took too long, aborting benchmark")
-                    return@launch
-                }
-
-                messages += ChatMessage(Sender.LLM, llamaAndroid.bench(512, 128, 1, 3))
-            } catch (exc: IllegalStateException) {
-                Log.e(tag, "bench() failed", exc)
-                messages += ChatMessage(Sender.LLM, exc.message!!)
-            }
-        }
-    }
-
     fun load(pathToModel: String) {
         if (isLoading) {
             messages += ChatMessage(Sender.LLM, "Model is already loading. Please wait.")

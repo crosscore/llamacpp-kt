@@ -55,16 +55,6 @@ class LLamaAndroid {
     private external fun free_batch(batch: Long)
     private external fun new_sampler(): Long
     private external fun free_sampler(sampler: Long)
-    private external fun bench_model(
-        context: Long,
-        model: Long,
-        batch: Long,
-        pp: Int,
-        tg: Int,
-        pl: Int,
-        nr: Int
-    ): String
-
 
     private external fun system_info(): String
 
@@ -87,24 +77,6 @@ class LLamaAndroid {
 
     private val operationCount = AtomicInteger(0)
     private val isUnloading = AtomicBoolean(false)
-
-    suspend fun bench(pp: Int, tg: Int, pl: Int, nr: Int = 1): String {
-        return withContext(runLoop) {
-            when (val state = threadLocalState.get()) {
-                is State.Loaded -> {
-                    Log.d(tag, "bench(): $state")
-                    val batch = new_batch(512, 0, 1)
-                    try {
-                        bench_model(state.context, state.model, batch, pp, tg, pl, nr)
-                    } finally {
-                        free_batch(batch)
-                    }
-                }
-                else -> throw IllegalStateException("No model loaded")
-            }
-        }
-    }
-
 
     suspend fun load(pathToModel: String) {
         withContext(runLoop) {
