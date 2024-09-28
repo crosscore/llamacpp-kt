@@ -9,3 +9,11 @@ Google Drive API を有効化: Google Cloud Platform (GCP) でプロジェクト
 
 ファイルの読み込み: ダウンロードが完了したら、保存したファイルパスを使用してモデルファイルを読み込みます。
 ```
+
+```
+brew install --cask android-file-transfer
+```
+
+```
+/storage/emulated/0/Android/data/com.example.llama/files
+```

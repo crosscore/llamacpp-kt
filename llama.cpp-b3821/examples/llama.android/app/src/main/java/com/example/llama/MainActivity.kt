@@ -146,7 +146,7 @@ fun MainCompose(
             enabled = !viewModel.isLoading // 入力を無効化
         )
 
-        // 1つ目のボタン行: Send, Bench, Clear, Copy
+        // 1つ目のボタン行: Send, Clear, Copy
         Row(
             modifier = Modifier
                 .fillMaxWidth()
