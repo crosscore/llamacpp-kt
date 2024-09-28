@@ -56,21 +56,22 @@ bool is_valid_utf8(const char * string) {
 }
 
 static void log_callback(ggml_log_level level, const char * fmt, void * data) {
-    if (level == GGML_LOG_LEVEL_ERROR)     __android_log_print(ANDROID_LOG_ERROR, TAG, fmt, data);
-    else if (level == GGML_LOG_LEVEL_INFO) __android_log_print(ANDROID_LOG_INFO, TAG, fmt, data);
-    else if (level == GGML_LOG_LEVEL_WARN) __android_log_print(ANDROID_LOG_WARN, TAG, fmt, data);
-    else __android_log_print(ANDROID_LOG_DEFAULT, TAG, fmt, data);
+    if (level == GGML_LOG_LEVEL_ERROR) {     __android_log_print(ANDROID_LOG_ERROR, TAG, fmt, data);
+    } else if (level == GGML_LOG_LEVEL_INFO) { __android_log_print(ANDROID_LOG_INFO, TAG, fmt, data);
+    } else if (level == GGML_LOG_LEVEL_WARN) { __android_log_print(ANDROID_LOG_WARN, TAG, fmt, data);
+    } else { __android_log_print(ANDROID_LOG_DEFAULT, TAG, fmt, data);
+}
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring filename) {
+Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject /*unused*/, jstring filename) {
     llama_model_params model_params = llama_model_default_params();
 
-    auto path_to_model = env->GetStringUTFChars(filename, 0);
+    const auto *path_to_model = env->GetStringUTFChars(filename, nullptr);
     LOGi("Loading model from %s", path_to_model);
 
-    auto model = llama_load_model_from_file(path_to_model, model_params);
+    auto *model = llama_load_model_from_file(path_to_model, model_params);
     env->ReleaseStringUTFChars(filename, path_to_model);
 
     if (!model) {
@@ -84,13 +85,13 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring fi
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_free_1model(JNIEnv *, jobject, jlong model) {
+Java_android_llama_cpp_LLamaAndroid_free_1model(JNIEnv * /*unused*/, jobject /*unused*/, jlong model) {
     llama_free_model(reinterpret_cast<llama_model *>(model));
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject, jlong jmodel) {
+Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject /*unused*/, jlong jmodel) {
     auto model = reinterpret_cast<llama_model *>(jmodel);
 
     if (!model) {
@@ -122,25 +123,25 @@ Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject, jlong jmo
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_free_1context(JNIEnv *, jobject, jlong context) {
+Java_android_llama_cpp_LLamaAndroid_free_1context(JNIEnv * /*unused*/, jobject /*unused*/, jlong context) {
     llama_free(reinterpret_cast<llama_context *>(context));
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_backend_1free(JNIEnv *, jobject) {
+Java_android_llama_cpp_LLamaAndroid_backend_1free(JNIEnv * /*unused*/, jobject /*unused*/) {
     llama_backend_free();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv *, jobject) {
-    llama_log_set(log_callback, NULL);
+Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv * /*unused*/, jobject /*unused*/) {
+    llama_log_set(log_callback, nullptr);
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *, jobject, jint n_tokens, jint embd, jint n_seq_max) {
+Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv * /*unused*/, jobject /*unused*/, jint n_tokens, jint embd, jint n_seq_max) {
     llama_batch *batch = new llama_batch {
             n_tokens, // 修正: n_tokens を設定
             nullptr,
@@ -173,8 +174,8 @@ Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *, jobject, jint n_tokens,
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv *, jobject, jlong batch_pointer) {
-    llama_batch * batch = reinterpret_cast<llama_batch *>(batch_pointer);
+Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv * /*unused*/, jobject /*unused*/, jlong batch_pointer) {
+    auto * batch = reinterpret_cast<llama_batch *>(batch_pointer);
     if (batch) {
         if (batch->embd) {
             free(batch->embd);
@@ -205,7 +206,7 @@ Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv *, jobject, jlong batch_p
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv *, jobject) {
+Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv * /*unused*/, jobject /*unused*/) {
     auto sparams = llama_sampler_chain_default_params();
     sparams.no_perf = true;
     llama_sampler * smpl = llama_sampler_chain_init(sparams);
@@ -216,7 +217,7 @@ Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv *, jobject) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv *, jobject, jlong sampler_pointer) {
+Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv * /*unused*/, jobject /*unused*/, jlong sampler_pointer) {
     llama_sampler * sampler = reinterpret_cast<llama_sampler *>(sampler_pointer);
     llama_sampler_free(sampler);
     // delete sampler; // sampler構造体自体を解放
@@ -224,13 +225,13 @@ Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv *, jobject, jlong sampl
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv *, jobject) {
+Java_android_llama_cpp_LLamaAndroid_backend_1init(JNIEnv * /*unused*/, jobject /*unused*/) {
     llama_backend_init();
 }
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_android_llama_cpp_LLamaAndroid_system_1info(JNIEnv *env, jobject) {
+Java_android_llama_cpp_LLamaAndroid_system_1info(JNIEnv *env, jobject /*unused*/) {
     return env->NewStringUTF(llama_print_system_info());
 }
 
@@ -238,7 +239,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_android_llama_cpp_LLamaAndroid_completion_1init(
         JNIEnv *env,
-        jobject,
+        jobject /*unused*/,
         jlong context_pointer,
         jlong batch_pointer,
         jstring jtext,
@@ -289,7 +290,7 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_android_llama_cpp_LLamaAndroid_completion_1loop(
         JNIEnv * env,
-        jobject,
+        jobject /*unused*/,
         jlong context_pointer,
         jlong batch_pointer,
         jlong sampler_pointer,
@@ -301,9 +302,11 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     const auto sampler = reinterpret_cast<llama_sampler *>(sampler_pointer);
     const auto model = llama_get_model(context);
 
-    if (!la_int_var) la_int_var = env->GetObjectClass(intvar_ncur);
-    if (!la_int_var_value) la_int_var_value = env->GetMethodID(la_int_var, "getValue", "()I");
-    if (!la_int_var_inc) la_int_var_inc = env->GetMethodID(la_int_var, "inc", "()V");
+    if (!la_int_var) { la_int_var = env->GetObjectClass(intvar_ncur);
+}
+    if (!la_int_var_value) { la_int_var_value = env->GetMethodID(la_int_var, "getValue", "()I");
+}
+    if (!la_int_var_inc) { la_int_var_inc = env->GetMethodID(la_int_var, "inc", "()V"); }
 
     // sample the most likely token
     const auto new_token_id = llama_sampler_sample(sampler, context, -1);
@@ -316,7 +319,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
     auto new_token_chars = llama_token_to_piece(context, new_token_id);
     cached_token_chars += new_token_chars;
 
-    jstring new_token = nullptr;
+    jstring new_token;
     if (is_valid_utf8(cached_token_chars.c_str())) {
         new_token = env->NewStringUTF(cached_token_chars.c_str());
         LOGi("cached: %s, new_token_chars: `%s`, id: %d", cached_token_chars.c_str(), new_token_chars.c_str(), new_token_id);
@@ -339,6 +342,6 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_android_llama_cpp_LLamaAndroid_kv_1cache_1clear(JNIEnv *, jobject, jlong context) {
+Java_android_llama_cpp_LLamaAndroid_kv_1cache_1clear(JNIEnv * /*unused*/, jobject /*unused*/, jlong context) {
     llama_kv_cache_clear(reinterpret_cast<llama_context *>(context));
 }
