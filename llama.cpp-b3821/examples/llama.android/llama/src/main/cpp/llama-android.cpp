@@ -86,13 +86,13 @@ Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject /*unused*/,
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1model(JNIEnv * /*unused*/, jobject /*unused*/, jlong model) {
-    llama_free_model(reinterpret_cast<llama_model *>(model));
+    llama_free_model(reinterpret_cast<llama_model *>(model)); // NOLINT
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject /*unused*/, jlong jmodel) {
-    auto model = reinterpret_cast<llama_model *>(jmodel);
+    auto model = reinterpret_cast<llama_model *>(jmodel); // NOLINT
 
     if (!model) {
         LOGe("new_context(): model cannot be null");
@@ -124,7 +124,7 @@ Java_android_llama_cpp_LLamaAndroid_new_1context(JNIEnv *env, jobject /*unused*/
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1context(JNIEnv * /*unused*/, jobject /*unused*/, jlong context) {
-    llama_free(reinterpret_cast<llama_context *>(context));
+    llama_free(reinterpret_cast<llama_context *>(context)); // NOLINT
 }
 
 extern "C"
@@ -142,8 +142,8 @@ Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv * /*unused*/, jobjec
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv * /*unused*/, jobject /*unused*/, jint n_tokens, jint embd, jint n_seq_max) {
-    llama_batch *batch = new llama_batch {
-            n_tokens, // 修正: n_tokens を設定
+    auto *batch = new llama_batch {
+            n_tokens, // 修正: 0 -> n_tokens
             nullptr,
             nullptr,
             nullptr,
@@ -175,32 +175,20 @@ Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv * /*unused*/, jobject /*un
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv * /*unused*/, jobject /*unused*/, jlong batch_pointer) {
-    auto * batch = reinterpret_cast<llama_batch *>(batch_pointer);
+    auto * batch = reinterpret_cast<llama_batch *>(static_cast<uintptr_t>(batch_pointer)); // NOLINT
     if (batch) {
-        if (batch->embd) {
-            free(batch->embd);
-        }
-        if (batch->token) {
-            free(batch->token);
-        }
-        if (batch->pos) {
-            free(batch->pos);
-        }
-        if (batch->n_seq_id) {
-            free(batch->n_seq_id);
-        }
+        free(batch->embd);
+        free(batch->token);
+        free(batch->pos);
+        free(batch->n_seq_id);
         if (batch->seq_id) {
             for (int i = 0; i < batch->n_tokens; ++i) {
-                if (batch->seq_id[i]) {
-                    free(batch->seq_id[i]);
-                }
+                free(static_cast<void*>(batch->seq_id[i]));
             }
-            free(batch->seq_id);
+            free(static_cast<void*>(batch->seq_id));
         }
-        if (batch->logits) {
-            free(batch->logits);
-        }
-        delete batch; // 修正: batch 構造体自体を解放
+        free(batch->logits);
+        delete batch;
     }
 }
 
@@ -218,7 +206,7 @@ Java_android_llama_cpp_LLamaAndroid_new_1sampler(JNIEnv * /*unused*/, jobject /*
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1sampler(JNIEnv * /*unused*/, jobject /*unused*/, jlong sampler_pointer) {
-    llama_sampler * sampler = reinterpret_cast<llama_sampler *>(sampler_pointer);
+    llama_sampler * sampler = reinterpret_cast<llama_sampler *>(sampler_pointer); // NOLINT
     llama_sampler_free(sampler);
     // delete sampler; // sampler構造体自体を解放
 }
@@ -248,11 +236,11 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
 
     cached_token_chars.clear();
 
-    const auto text = env->GetStringUTFChars(jtext, 0);
-    const auto context = reinterpret_cast<llama_context *>(context_pointer);
-    const auto batch = reinterpret_cast<llama_batch *>(batch_pointer);
+    const auto *const text = env->GetStringUTFChars(jtext, 0);
+    auto *const context = reinterpret_cast<llama_context *>(context_pointer); // NOLINT
+    auto *const batch = reinterpret_cast<llama_batch *>(batch_pointer); // NOLINT
 
-    const auto tokens_list = llama_tokenize(context, text, 1);
+    const auto tokens_list = llama_tokenize(context, text, true);
 
     auto n_ctx = llama_n_ctx(context);
     auto n_kv_req = tokens_list.size() + (n_len - tokens_list.size());
@@ -297,10 +285,10 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
         jint n_len,
         jobject intvar_ncur
 ) {
-    const auto context = reinterpret_cast<llama_context *>(context_pointer);
-    const auto batch   = reinterpret_cast<llama_batch   *>(batch_pointer);
-    const auto sampler = reinterpret_cast<llama_sampler *>(sampler_pointer);
-    const auto model = llama_get_model(context);
+    auto *const context = reinterpret_cast<llama_context *>(context_pointer); // NOLINT
+    auto *const batch   = reinterpret_cast<llama_batch   *>(batch_pointer); // NOLINT
+    auto *const sampler = reinterpret_cast<llama_sampler *>(sampler_pointer); // NOLINT
+    const auto *const model = llama_get_model(context);
 
     if (!la_int_var) { la_int_var = env->GetObjectClass(intvar_ncur);
 }
@@ -343,5 +331,5 @@ Java_android_llama_cpp_LLamaAndroid_completion_1loop(
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_kv_1cache_1clear(JNIEnv * /*unused*/, jobject /*unused*/, jlong context) {
-    llama_kv_cache_clear(reinterpret_cast<llama_context *>(context));
+    llama_kv_cache_clear(reinterpret_cast<llama_context *>(context)); // NOLINT(*-no-int-to-ptr)
 }
