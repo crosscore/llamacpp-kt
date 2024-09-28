@@ -123,20 +123,23 @@ class LLamaAndroid {
 
         operationCount.incrementAndGet()
 
+        var batch: Long = 0
+        var sampler: Long = 0
+
         try {
             when (val state = threadLocalState.get()) {
                 is State.Loaded -> {
-                    val batch = new_batch(512, 0, 1)
-                    val sampler = new_sampler()
-                    if (batch == 0L || sampler == 0L) {
-                        throw IllegalStateException("Failed to create batch or sampler")
-                    }
                     try {
+                        batch = new_batch(512, 0, 1)
+                        if (batch == 0L) throw OutOfMemoryError("Failed to create batch")
+
+                        sampler = new_sampler()
+                        if (sampler == 0L) throw OutOfMemoryError("Failed to create sampler")
+
                         val ncur = IntVar(completion_init(state.context, batch, message, nlen))
                         while (ncur.value <= nlen) {
-                            // Check if the model is still loaded
                             if (threadLocalState.get() !is State.Loaded || isUnloading.get()) {
-                                break
+                                throw CancellationException("Operation canceled due to model unloading")
                             }
                             val str = completion_loop(state.context, batch, sampler, nlen, ncur)
                             if (str == null) {
@@ -144,15 +147,20 @@ class LLamaAndroid {
                             }
                             emit(str)
                         }
-                        kv_cache_clear(state.context)
+                    } catch (e: Exception) {
+                        when (e) {
+                            is CancellationException -> throw e
+                            else -> throw IllegalStateException("Error during completion", e)
+                        }
                     } finally {
-                        free_sampler(sampler)
-                        free_batch(batch)
+                        kv_cache_clear(state.context)
                     }
                 }
-                else -> {}
+                else -> throw IllegalStateException("Model not loaded")
             }
         } finally {
+            if (sampler != 0L) free_sampler(sampler)
+            if (batch != 0L) free_batch(batch)
             operationCount.decrementAndGet()
         }
     }.flowOn(runLoop)
@@ -184,9 +192,7 @@ class LLamaAndroid {
     }
 
     companion object {
-        private class IntVar(value: Int) {
-            @Volatile
-            var value: Int = value
+        private class IntVar(@Volatile var value: Int) {
 
             fun inc() {
                 synchronized(this) {

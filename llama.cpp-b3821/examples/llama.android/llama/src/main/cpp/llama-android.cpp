@@ -141,53 +141,30 @@ Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv * /*unused*/, jobjec
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv * /*unused*/, jobject /*unused*/, jint n_tokens, jint embd, jint n_seq_max) {
-    auto *batch = new llama_batch {
-            n_tokens, // 修正: 0 -> n_tokens
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            0,
-            0,
-            0,
-    };
-
-    if (embd) {
-        batch->embd = (float *) malloc(sizeof(float) * n_tokens * embd);
-    } else {
-        batch->token = (llama_token *) malloc(sizeof(llama_token) * n_tokens);
+Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *env, jobject /*unused*/, jint n_tokens, jint embd, jint n_seq_max) {
+    llama_batch *batch_ptr = new (std::nothrow) llama_batch();
+    if (batch_ptr == nullptr) {
+        env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"), "Failed to allocate memory for batch pointer");
+        return 0;
     }
 
-    batch->pos      = (llama_pos *)     malloc(sizeof(llama_pos)      * n_tokens);
-    batch->n_seq_id = (int32_t *)       malloc(sizeof(int32_t)        * n_tokens);
-    batch->seq_id   = (llama_seq_id **) malloc(sizeof(llama_seq_id *) * n_tokens);
-    for (int i = 0; i < n_tokens; ++i) {
-        batch->seq_id[i] = (llama_seq_id *) malloc(sizeof(llama_seq_id) * n_seq_max);
-    }
-    batch->logits   = (int8_t *)        malloc(sizeof(int8_t)         * n_tokens);
+    *batch_ptr = llama_batch_init(n_tokens, embd, n_seq_max);
 
-    return reinterpret_cast<jlong>(batch);
+    if (batch_ptr->token == nullptr && batch_ptr->embd == nullptr) {
+        delete batch_ptr;
+        env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"), "Failed to allocate memory for batch");
+        return 0;
+    }
+
+    return reinterpret_cast<jlong>(batch_ptr);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_android_llama_cpp_LLamaAndroid_free_1batch(JNIEnv * /*unused*/, jobject /*unused*/, jlong batch_pointer) {
-    auto * batch = reinterpret_cast<llama_batch *>(static_cast<uintptr_t>(batch_pointer)); // NOLINT
+    auto * batch = reinterpret_cast<llama_batch *>(batch_pointer); // NOLINT
     if (batch) {
-        free(batch->embd);
-        free(batch->token);
-        free(batch->pos);
-        free(batch->n_seq_id);
-        if (batch->seq_id) {
-            for (int i = 0; i < batch->n_tokens; ++i) {
-                free(static_cast<void*>(batch->seq_id[i]));
-            }
-            free(static_cast<void*>(batch->seq_id));
-        }
-        free(batch->logits);
+        llama_batch_free(*batch);
         delete batch;
     }
 }
