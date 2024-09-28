@@ -55,12 +55,15 @@ bool is_valid_utf8(const char * string) {
     return true;
 }
 
-static void log_callback(ggml_log_level level, const char * fmt, void * data) {
-    if (level == GGML_LOG_LEVEL_ERROR) {     __android_log_print(ANDROID_LOG_ERROR, TAG, fmt, data);
-    } else if (level == GGML_LOG_LEVEL_INFO) { __android_log_print(ANDROID_LOG_INFO, TAG, fmt, data);
-    } else if (level == GGML_LOG_LEVEL_WARN) { __android_log_print(ANDROID_LOG_WARN, TAG, fmt, data);
-    } else { __android_log_print(ANDROID_LOG_DEFAULT, TAG, fmt, data);
-}
+namespace {
+    void log_callback(ggml_log_level level, const char * fmt, void * data) {
+        if (level == GGML_LOG_LEVEL_ERROR) {     __android_log_print(ANDROID_LOG_ERROR, TAG, fmt, data);
+        } else if (level == GGML_LOG_LEVEL_INFO) { __android_log_print(ANDROID_LOG_INFO, TAG, fmt, data);
+        } else if (level == GGML_LOG_LEVEL_WARN) { __android_log_print(ANDROID_LOG_WARN, TAG, fmt, data);
+        } else { __android_log_print(ANDROID_LOG_DEFAULT, TAG, fmt, data);
+        }
+    }
+
 }
 
 extern "C"
@@ -142,7 +145,7 @@ Java_android_llama_cpp_LLamaAndroid_log_1to_1android(JNIEnv * /*unused*/, jobjec
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_android_llama_cpp_LLamaAndroid_new_1batch(JNIEnv *env, jobject /*unused*/, jint n_tokens, jint embd, jint n_seq_max) {
-    llama_batch *batch_ptr = new (std::nothrow) llama_batch();
+    auto *batch_ptr = new (std::nothrow) llama_batch();
     if (batch_ptr == nullptr) {
         env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"), "Failed to allocate memory for batch pointer");
         return 0;
@@ -213,7 +216,7 @@ Java_android_llama_cpp_LLamaAndroid_completion_1init(
 
     cached_token_chars.clear();
 
-    const auto *const text = env->GetStringUTFChars(jtext, 0);
+    const auto *const text = env->GetStringUTFChars(jtext, nullptr);
     auto *const context = reinterpret_cast<llama_context *>(context_pointer); // NOLINT
     auto *const batch = reinterpret_cast<llama_batch *>(batch_pointer); // NOLINT
 
